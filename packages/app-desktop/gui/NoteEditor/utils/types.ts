@@ -1,5 +1,5 @@
 import AsyncActionQueue from '@joplin/lib/AsyncActionQueue';
-import { ToolbarButtonInfo } from '@joplin/lib/services/commands/ToolbarButtonUtils';
+import { ToolbarButtonInfo, ToolbarItem } from '@joplin/lib/services/commands/ToolbarButtonUtils';
 import { PluginHtmlContents, PluginStates } from '@joplin/lib/services/plugins/reducer';
 import { MarkupLanguage } from '@joplin/renderer';
 import { RenderResult, RenderResultPluginAsset } from '@joplin/renderer/types';
@@ -8,6 +8,9 @@ import { ProcessResultsRow } from '@joplin/lib/services/search/SearchEngine';
 import { DropHandler } from './useDropHandler';
 import { SearchMarkers } from './useSearchMarkers';
 import { ParseOptions } from '@joplin/lib/HtmlToMd';
+import { ScrollStrategy } from '@joplin/editor/CodeMirror/CodeMirrorControl';
+import { MarkupToHtmlOptions } from '../../hooks/useMarkupToHtml';
+import { ScrollbarSize } from '@joplin/lib/models/settings/builtInMetadata';
 
 export interface AllAssetsOptions {
 	contentMaxWidthTarget?: string;
@@ -47,9 +50,10 @@ export interface NoteEditorProps {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Old code before rule was applied
 	highlightedWords: any[];
 	plugins: PluginStates;
-	toolbarButtonInfos: ToolbarButtonInfo[];
+	toolbarButtonInfos: ToolbarItem[];
 	setTagsToolbarButtonInfo: ToolbarButtonInfo;
 	contentMaxWidth: number;
+	scrollbarSize: ScrollbarSize;
 	isSafeMode: boolean;
 	useCustomPdfViewer: boolean;
 	shareCacheSetting: string;
@@ -71,22 +75,7 @@ export interface NoteBodyEditorRef {
 	execCommand(command: CommandValue): Promise<void>;
 }
 
-export interface MarkupToHtmlOptions {
-	replaceResourceInternalToExternalLinks?: boolean;
-	resourceInfos?: ResourceInfos;
-	contentMaxWidth?: number;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Old code before rule was applied
-	plugins?: Record<string, any>;
-	bodyOnly?: boolean;
-	mapsToLine?: boolean;
-	useCustomPdfViewer?: boolean;
-	noteId?: string;
-	vendorDir?: string;
-	platformName?: string;
-	allowedFilePrefixes?: string[];
-	whiteBackgroundNoteRendering?: boolean;
-}
-
+export { MarkupToHtmlOptions };
 export type MarkupToHtmlHandler = (markupLanguage: MarkupLanguage, markup: string, options: MarkupToHtmlOptions)=> Promise<RenderResult>;
 export type HtmlToMarkdownHandler = (markupLanguage: number, html: string, originalCss: string, parseOptions?: ParseOptions)=> Promise<string>;
 
@@ -103,6 +92,8 @@ export interface NoteBodyEditorProps {
 	// or the CodeMirror editor. This is used to correctly render HTML notes and
 	// avoid cases where black text is rendered over a dark background.
 	whiteBackgroundNoteRendering: boolean;
+
+	scrollbarSize: ScrollbarSize;
 
 	content: string;
 	contentKey: string;
@@ -135,7 +126,7 @@ export interface NoteBodyEditorProps {
 	locale: string;
 	// eslint-disable-next-line @typescript-eslint/ban-types -- Old code before rule was applied
 	onDrop: DropHandler;
-	noteToolbarButtonInfos: ToolbarButtonInfo[];
+	noteToolbarButtonInfos: ToolbarItem[];
 	plugins: PluginStates;
 	fontSize: number;
 	contentMaxWidth: number;
@@ -271,3 +262,12 @@ export type DropCommandValue = ({
 	paths: string[];
 	createFileURL: boolean;
 }) & DropCommandBase;
+
+export interface ScrollToTextValue {
+	// Text should be plain text - it should not include Markdown characters as it needs to work
+	// with both TinyMCE and CodeMirror. To specific an element use the `element` property. For
+	// example to scroll to `## Scroll to this`, use `{ text: 'Scroll to this', element: 'h2' }`.
+	text: string;
+	element: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'strong' | 'ul';
+	scrollStrategy?: ScrollStrategy;
+}
